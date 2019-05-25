@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+# Fixes/verifies the javascript repo
+#
+# Run from within a checkout
+#
+# USAGE: fix.py ../damage.txt fix
+#        fix.py ../damage.txt check
+
 import subprocess
 import re
 import sys
@@ -9,6 +16,11 @@ def read_damage(filename):
         return [line.rstrip() for line in fd.readlines()]
 
 def find_commit_name_pairs(lines):
+    """Parses a line from damage.txt that looks like this:
+
+    + dce420b8...7b3df5c7 rxfire@3.0.5 -> rxfire@3.0.5 (forced update)
+    """
+
     pattern = re.compile(r'^ \+ ([^.]*)\.\.\.[^ ]* ([^ ]*) -> .*')
     result = []
     for line in lines:
@@ -23,6 +35,7 @@ def find_commit_name_pairs(lines):
     return result
 
 def find_branches():
+    """Finds all branches in the origin remote."""
     pattern = re.compile(r'remotes/origin/(.*)')
     output = subprocess.check_output(['git', 'branch', '-a'])
 
@@ -36,6 +49,7 @@ def find_branches():
 
 
 def find_tags():
+    """Finds all tags."""
     output = subprocess.check_output(['git', 'tag', '-l'])
 
     tags = [line.rstrip() for line in output.splitlines()]
@@ -70,7 +84,6 @@ def run_check(pairs):
         if actual != commit:
             raise Exception("actual didn't match: %s vs %s" % (actual, commit))
 
-
 def main(args):
     command = args[2]
     lines = read_damage(args[1])
@@ -82,7 +95,6 @@ def main(args):
         run_fix(pairs, branches, tags)
     elif command == 'check':
         run_check(pairs)
-
 
 
 main(sys.argv)
